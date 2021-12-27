@@ -30,7 +30,7 @@ const getBatchForDelivery = (packages, max_carriable_weight) => {
 const calculateDeliveryTime = ({ basePrice, packages, no_of_vehicles, max_speed, max_carriable_weight }) => {
 
     const output = {
-        waitingToBeDelivered: packages,
+        waitingToBeDelivered: packages.filter(package => package.weight < max_carriable_weight),
         currentTime: 0,
         vehiclesAvailability: new Array(no_of_vehicles).fill(0),
         delivered: []
@@ -38,7 +38,8 @@ const calculateDeliveryTime = ({ basePrice, packages, no_of_vehicles, max_speed,
 
     while (output.waitingToBeDelivered.length !== 0) {
 
-        while (output.vehiclesAvailability.indexOf(0) != -1) {
+        while (output.vehiclesAvailability.indexOf(0) != -1 && output.waitingToBeDelivered.length) {
+
             const selectedBatch = getBatchForDelivery([...output.waitingToBeDelivered], max_carriable_weight);
             selectedBatch.forEach(selectedPackage => {
                 selectedPackage.deliveryTime = output.currentTime + calculateTime(selectedPackage.distance, max_speed);
@@ -47,9 +48,9 @@ const calculateDeliveryTime = ({ basePrice, packages, no_of_vehicles, max_speed,
             });
 
             const [longerDistancePackage, ...otherPackages] = sortByDeliveryTime(selectedBatch);
-            const roundTripTime = 2 * longerDistancePackage.deliveryTime;
+            const roundTripTime = longerDistancePackage && (2 * longerDistancePackage.deliveryTime);
             const index = output.vehiclesAvailability.indexOf(0);
-            output.vehiclesAvailability[index] = roundTripTime;
+            output.vehiclesAvailability[index] = roundTripTime || 0;
         }
 
         const smallerTravelTime = Math.min(...output.vehiclesAvailability);
