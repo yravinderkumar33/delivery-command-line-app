@@ -1,9 +1,4 @@
-const getFinalCostDetails = require("../deliveryCost/controller");
-
 const calculateTime = (distance, speed) => distance / speed;
-
-const filterCallbackFn = maxSum => packagesArr => calculatePackagesWeight(packagesArr) <= maxSum;
-const filterPackagesByMaxCarriableWeight = (arr, maxSum) => arr.filter(filterCallbackFn(maxSum))
 
 const getSubArrays = (arr) => {
     if (arr.length === 1) return [arr];
@@ -13,65 +8,56 @@ const getSubArrays = (arr) => {
     }
 };
 
-const calculatePackagesWeight = packages => packages.reduce((sum, package) => package.weight + sum, 0);
+const getBatchWeight = packages => packages.reduce((sum, package) => package.weight + sum, 0);
+
 const sortByDeliveryTime = arr => arr.sort((a, b) => b.distance - a.distance);
 
 const getBatchForDelivery = (packages, max_carriable_weight) => {
-    const allPossibleBatches = getSubArrays(packages);
-    const batchesWithMaxCarriableWeight = filterPackagesByMaxCarriableWeight(allPossibleBatches, max_carriable_weight);
-    const maxBatchSize = Math.max(...batchesWithMaxCarriableWeight.map(batches => batches.length));
-    const batchesWithMaxPackages = batchesWithMaxCarriableWeight.filter(batches => batches.length === maxBatchSize);
-    const { selectedBatch } = batchesWithMaxPackages.reduce((output, batch) => {
-        const sum = calculatePackagesWeight(batch);
-        if (sum > output.maxSum) {
-            output.selectedBatch = batch
-            output.maxSum = sum;
-        };
-        return output
-    }, { maxSum: -1, selectedBatch: null });
 
-    return packages.reduce((output, package) => {
-        if (selectedBatch.find(selectedPackage => package.pkg_id === selectedPackage.pkg_id)) {
-            output.selected.push(package);
-        } else {
-            output.pending.push(package);
-        }
-        return output;
-    }, { selected: [], pending: [] });
+    const allPossibleBatches = getSubArrays(packages);
+
+    return allPossibleBatches.reduce((selectedBatch, batch) => {
+        if (batch.length < selectedBatch.length) return selectedBatch;
+        const batchWeight = getBatchWeight(batch);
+        if (batchWeight > max_carriable_weight) return selectedBatch;
+        const selectedBatchWeight = getBatchWeight(selectedBatch);
+        if (batchWeight < selectedBatchWeight) return selectedBatch;
+        selectedBatch = batch;
+        return selectedBatch;
+    }, []);
 }
 
 const calculateDeliveryTime = ({ basePrice, packages, no_of_vehicles, max_speed, max_carriable_weight }) => {
 
-    const obj = {
-        packages,
+    const output = {
+        waitingToBeDelivered: packages,
         currentTime: 0,
-        vehicles: {},
         vehiclesAvailability: new Array(no_of_vehicles).fill(0),
         delivered: []
     }
 
-    while (obj.packages.length !== 0) {
+    while (output.waitingToBeDelivered.length !== 0) {
 
-        while (obj.vehiclesAvailability.indexOf(0) != -1) {
-            const index = obj.vehiclesAvailability.indexOf(0);
-            const { selected, pending } = getBatchForDelivery(obj.packages, max_carriable_weight);
-            selected.forEach(selectedPackage => {
-                selectedPackage.discount = getFinalCostDetails({ basePrice, distance: selectedPackage.distance, weight: selectedPackage.weight, offerCode: selectedPackage.offerCode }).discount;
-                selectedPackage.deliveryTime = obj.currentTime + calculateTime(selectedPackage.distance, max_speed);
-                obj.delivered.push(selectedPackage);
+        while (output.vehiclesAvailability.indexOf(0) != -1) {
+            const selectedBatch = getBatchForDelivery([...output.waitingToBeDelivered], max_carriable_weight);
+            selectedBatch.forEach(selectedPackage => {
+                selectedPackage.deliveryTime = output.currentTime + calculateTime(selectedPackage.distance, max_speed);
+                output.delivered.push(selectedPackage);
+                output.waitingToBeDelivered.splice(output.waitingToBeDelivered.findIndex(package => package.pkg_id === selectedPackage.pkg_id), 1);
             });
-            const [longerDistancePackage,] = sortByDeliveryTime(selected);
+
+            const [longerDistancePackage, ...otherPackages] = sortByDeliveryTime(selectedBatch);
             const roundTripTime = 2 * longerDistancePackage.deliveryTime;
-            obj.vehiclesAvailability[index] = roundTripTime;
-            obj.packages = pending;
+            const index = output.vehiclesAvailability.indexOf(0);
+            output.vehiclesAvailability[index] = roundTripTime;
         }
 
-        const smallerTravelTime = Math.min(...obj.vehiclesAvailability);
-        obj.currentTime = obj.currentTime + smallerTravelTime;
-        obj.vehiclesAvailability[obj.vehiclesAvailability.indexOf(smallerTravelTime)] = 0;
+        const smallerTravelTime = Math.min(...output.vehiclesAvailability);
+        output.currentTime = output.currentTime + smallerTravelTime;
+        output.vehiclesAvailability[output.vehiclesAvailability.indexOf(smallerTravelTime)] = 0;
     }
 
-    return obj;
+    return output;
 }
 
 module.exports = {
