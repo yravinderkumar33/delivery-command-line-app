@@ -31,30 +31,30 @@ const calculateDeliveryTime = ({ basePrice, packages, no_of_vehicles, max_speed,
 
     const output = {
         waitingToBeDelivered: packages.filter(package => package.weight < max_carriable_weight),
-        currentTime: 0,
         vehiclesAvailability: new Array(no_of_vehicles).fill(0),
-        delivered: []
+        delivered: [],
+        vehiclesNextAvailableAt: new Array(no_of_vehicles).fill(0)
     }
 
     while (output.waitingToBeDelivered.length !== 0) {
 
         while (output.vehiclesAvailability.indexOf(0) != -1 && output.waitingToBeDelivered.length) {
-
+            const index = output.vehiclesAvailability.indexOf(0);
             const selectedBatch = getBatchForDelivery([...output.waitingToBeDelivered], max_carriable_weight);
             selectedBatch.forEach(selectedPackage => {
-                selectedPackage.deliveryTime = output.currentTime + calculateTime(selectedPackage.distance, max_speed);
+                const deliveryTime = output.vehiclesNextAvailableAt[index] + calculateTime(selectedPackage.distance, max_speed);
+                selectedPackage.deliveryTime = deliveryTime.toFixed(2);
                 output.delivered.push(selectedPackage);
                 output.waitingToBeDelivered.splice(output.waitingToBeDelivered.findIndex(package => package.pkg_id === selectedPackage.pkg_id), 1);
             });
 
             const [longerDistancePackage, ...otherPackages] = sortByDeliveryTime(selectedBatch);
             const roundTripTime = longerDistancePackage && (2 * longerDistancePackage.deliveryTime);
-            const index = output.vehiclesAvailability.indexOf(0);
+            output.vehiclesNextAvailableAt[index] = roundTripTime;
             output.vehiclesAvailability[index] = roundTripTime || 0;
         }
 
         const smallerTravelTime = Math.min(...output.vehiclesAvailability);
-        output.currentTime = output.currentTime + smallerTravelTime;
         output.vehiclesAvailability[output.vehiclesAvailability.indexOf(smallerTravelTime)] = 0;
     }
 

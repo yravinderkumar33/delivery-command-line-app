@@ -24,27 +24,32 @@ const questions = {
         {
             type: 'number',
             name: 'discountPercentage',
-            message: 'Discount Percentage ?'
+            message: 'Discount Percentage ?',
+            validate: value => value >= 0 ? true : 'Invalid Input'
         },
         {
             type: 'number',
             name: 'minWeight',
-            message: 'Minimum Weight ?'
+            message: 'Minimum Weight ?',
+            validate: value => value >= 0 ? true : 'Invalid Input'
         },
         {
             type: 'number',
             name: 'maxWeight',
-            message: 'Maximum Weight ?'
+            message: 'Maximum Weight ?',
+            validate: value => value >= 0 ? true : 'Invalid Input'
         },
         {
             type: 'number',
             name: 'minDistance',
-            message: 'Min Distance ?'
+            message: 'Min Distance ?',
+            validate: value => value >= 0 ? true : 'Invalid Input'
         },
         {
             type: 'number',
             name: 'maxDistance',
-            message: 'Max Distance ?'
+            message: 'Max Distance ?',
+            validate: value => value >= 0 ? true : 'Invalid Input'
         }
     ]
 }
