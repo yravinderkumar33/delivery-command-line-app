@@ -1,4 +1,4 @@
-const { findOffer } = require('../../offers');
+const { findOffer } = require("../offer/offers");
 
 const calculateDeliveryCost = ({ basePrice, distance, weight }) => {
     return basePrice + (distance * 5) + (weight * 10);

@@ -1,4 +1,4 @@
-const { getOffersList } = require("../../offers")
+const { getOffersList } = require("../offer/offers")
 
 const questions = {
     "base_delivery_cost": {
