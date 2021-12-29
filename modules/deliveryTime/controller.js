@@ -1,3 +1,5 @@
+const getFinalCostDetails = require("../deliveryCost/controller");
+
 const calculateTime = (distance, speed) => distance / speed;
 
 const getSubArrays = (arr) => {
@@ -45,6 +47,8 @@ const calculateDeliveryTime = ({ basePrice, packages, no_of_vehicles, max_speed,
                 const deliveryTime = output.vehiclesNextAvailableAt[index] + calculateTime(selectedPackage.distance, max_speed);
                 selectedPackage.deliveryTime = deliveryTime.toFixed(2);
                 output.delivered.push(selectedPackage);
+                const finalCostDetails = getFinalCostDetails({ basePrice: basePrice, distance: selectedPackage.distance, offerCode: selectedPackage.offerCode, weight: selectedPackage.weight });
+                selectedPackage.discount = finalCostDetails.discount || 0;
                 output.waitingToBeDelivered.splice(output.waitingToBeDelivered.findIndex(package => package.pkg_id === selectedPackage.pkg_id), 1);
             });
 
